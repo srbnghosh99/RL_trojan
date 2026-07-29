@@ -1,0 +1,7 @@
+scenario,flow,agent,is_rl,n_inject,seed,travel_time,queue,throughput
+1x1_normal,normal,maxqueue,False,0,4,184.24950199203187,70.45833587646484,2008.0
+1x1_normal,normal,maxqueue,False,4,4,200.69318746892094,77.30833435058594,2011.0
+1x1_normal,normal,maxqueue,False,8,4,203.48481831757093,79.59444427490234,2009.0
+1x1_normal,normal,maxqueue,False,12,4,180.61238420282788,72.94166564941406,2051.0
+1x1_normal,normal,maxqueue,False,16,4,202.97830474268414,79.65833282470703,1982.0
+1x1_normal,normal,maxqueue,False,20,4,193.6228201295466,77.61111450195312,2007.0

@@ -1,0 +1,15 @@
+includes:
+  - configs/tsc/colight.yml
+
+model:
+  name: efficient_colight
+  model:
+  name: efficient_colight
+  epsilon: 0.8
+  N_LAYERS: 1
+  NUM_HEADS: [8, 8]
+  INPUT_DIM: [64, 64]
+
+trainer:
+  episodes: 200        # you can also override trainer params
+  learning_start: 1000

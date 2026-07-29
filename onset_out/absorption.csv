@@ -1,0 +1,5 @@
+agent,is_rl,onset,departs,absorbed_steps
+maxqueue,False,300,325,25
+maxpressure,False,300,321,21
+mplight,True,300,393,93
+colight,True,300,399,99

@@ -1,0 +1,8 @@
+includes:
+  - configs/tsc/mplight.yml
+
+model:
+  name: "maxqueue"
+  train_model: False
+  test_model: True
+  load_model: False

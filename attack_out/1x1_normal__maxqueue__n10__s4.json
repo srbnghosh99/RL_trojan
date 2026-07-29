@@ -1,0 +1,1 @@
+{"travel_time": 202.0551102204409, "queue": 80.0888900756836, "throughput": 1996.0, "dtl": "data/output_data/tsc_rl_adversarial/maxqueue/cityflow1x1/sumo_4/logger/2026_07_23-19_38_50_DTL.log", "agent": "maxqueue", "scenario": "1x1_normal", "n_inject": 10, "seed": 4}

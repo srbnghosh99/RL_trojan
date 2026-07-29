@@ -1,0 +1,12 @@
+includes:
+  - configs/tsc/mplight.yml
+
+model:
+  name: "maxqueue"
+  train_model: True
+  test_model: True
+  load_model: False
+trainer:
+  episodes: 2
+  steps: 3600
+  test_steps: 3600

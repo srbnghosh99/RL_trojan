@@ -1,0 +1,2 @@
+signal,clean_mean,attack_mean,clean_std,attack_std,mean_shift_pct,ks_stat,ks_pvalue,wasserstein,js_divergence,false_alarm_rate,detection_rate,detection_auc,cusum_steps_to_detect
+ALL,3.86,22.260555555555555,3.1249535700913147,9.914213849669826,476.6983304548072,0.8686111111111111,0.0,18.400555555555552,0.7257625157896199,0.005833333333333334,0.8316666666666667,0.9659146219135801,13

@@ -1,0 +1,13 @@
+includes:
+  - configs/tsc/colight.yml
+model:
+  name: advance_colight
+  epsilon: 0.9
+  epsilon_decay: 0.9999
+  NEIGHBOR_NUM: 4
+  NUM_HEADS: [5, 5]
+  N_LAYERS: 2
+
+trainer:
+  episodes: 200        # you can also override trainer params
+  learning_start: 1000

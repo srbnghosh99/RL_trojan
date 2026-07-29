@@ -1,0 +1,30 @@
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environments
+tsc-env/
+.venv/
+venv/
+env/
+.env/
+
+# Editors
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Generated data
+data/output_data/
+wandb/
+
+# Jupyter notebooks
+*.ipynb
+
+# Shell scripts
+*.sh
+!test.sh
+!expt.sh

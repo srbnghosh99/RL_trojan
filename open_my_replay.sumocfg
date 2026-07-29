@@ -1,0 +1,9 @@
+<configuration>
+    <input>
+        <net-file value="sumo_config/data/cityflow1x1/roadnet.net.xml"/>
+        <route-files value="data/output_data/replay/fcd_run_1780417179.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+    </time>
+</configuration>

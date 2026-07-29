@@ -1,0 +1,45 @@
+includes:
+  - configs/tsc_max_adversarial/base.yml
+
+# MaxQueue heuristic: green to the phase with the longest total queue.
+# It is a pure heuristic (no checkpoint), but it DOES need signal_config
+# phase_pairs, so we provide the same block MPLight/CoLight use.
+model:
+  name: maxqueue
+  train_model: False
+  test_model: True
+  load_model: False
+
+trainer:
+  buffer_size: 0
+  action_interval: 10
+  learning_rate: 0
+  learning_start: 0
+  update_model_rate: 0
+  update_target_rate: 0
+
+logger:
+  save_rate: 0
+
+attacker:
+  random: False
+
+world:
+  signal_config: {
+    grid4x4: {
+      phase_pairs: [[1, 7], [2, 8], [1, 2], [7, 8], [4, 10], [5, 11], [10, 11], [4, 5]],
+      valid_acts: null
+    },
+    hz1x1: {
+      phase_pairs: [[2, 6], [0, 4], [3, 7], [1, 5], [6, 7], [2, 3], [4, 5], [0, 1]],
+      valid_acts: null
+    },
+    hz4x4: {
+      phase_pairs: [[4, 10], [1, 7], [5, 11], [2, 8], [10, 11], [4, 5], [7, 8], [1, 2]],
+      valid_acts: null
+    },
+    cologne1: {
+      phase_pairs: [[2, 6], [3, 7], [0, 4], [1, 5]],
+      valid_acts: null
+    }
+  }

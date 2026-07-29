@@ -1,0 +1,4 @@
+agent,clean_TT,clean_n,attack_TT,attack_n,degradation_pct
+mplight,242.8,16,193.3,18,-20.4
+colight,444.3,15,409.4,11,-7.9
+efficient_mplight,155.4,12,344.0,7,121.4

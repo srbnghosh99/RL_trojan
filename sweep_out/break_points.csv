@@ -1,0 +1,17 @@
+scenario,agent,clean_TT,inject_to_break
+1x1_low,maxqueue,89.8,20.0
+1x1_low,maxpressure,92.2,20.0
+1x1_low,mplight,83.9,10.0
+1x1_low,colight,82.1,10.0
+1x1_normal,maxqueue,109.0,18.0
+1x1_normal,maxpressure,107.5,20.0
+1x1_normal,mplight,93.7,10.0
+1x1_normal,colight,99.3,10.0
+1x1_high,maxqueue,150.0,
+1x1_high,maxpressure,144.3,20.0
+1x1_high,mplight,137.9,12.0
+1x1_high,colight,132.1,10.0
+2x2_normal,maxqueue,108.7,20.0
+2x2_normal,maxpressure,104.7,18.0
+2x2_normal,mplight,96.7,10.0
+2x2_normal,colight,97.1,10.0

@@ -1,0 +1,39 @@
+# Sparse Multi-PPO attacker parameters
+# Merge this `param:` block into the configuration entry that creates
+# `multi_ppo_attacker`.
+
+param:
+  # PPO optimization
+  actor_learning_rate: 0.0001
+  critic_learning_rate: 0.0001
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_epsilon: 0.10
+  value_clip_epsilon: 0.10
+  max_grad_norm: 0.50
+
+  # Rollout and minibatch training
+  max_buffer_size: 256
+  ppo_epochs: 4
+  minibatch_size: 64
+  target_kl: 0.02
+
+  # Attack action space
+  num_approaches: 4
+  num_segments: 2
+  max_vehicles_per_segment: 10
+
+  # Environment reward cost
+  # You said you are currently testing 0.5.
+  penalty_lambda: 0.50
+
+  # Sparse attack behavior
+  # Start small because penalty_lambda is already high.
+  sparsity_coef: 0.005
+  sparse_prior_strength: 1.0
+  no_attack_prior_strength: 0.25
+
+  # Separate exploration controls
+  attack_entropy_coef: 0.005
+  approach_entropy_coef: 0.010
+  scale_entropy_coef: 0.001

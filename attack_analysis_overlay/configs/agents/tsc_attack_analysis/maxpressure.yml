@@ -1,0 +1,13 @@
+# Attack-analysis config for 'maxpressure'.
+# Inherits the full max-adversarial setup (world / signal_config / attacker /
+# model + checkpoint loading). The custom trainer only overrides the eval loop;
+# injection count / onset are passed at runtime via ATK_* environment variables.
+includes:
+  - configs/tsc_max_adversarial/maxpressure.yml
+
+model:
+  train_model: False
+  test_model: True
+
+attacker:
+  random: False
