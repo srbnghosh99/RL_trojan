@@ -90,6 +90,27 @@ class TSCTaskMaxAdversarial(BaseTask):
             self._process_error(e)
             raise e
 
+
+@Registry.register_task("tsc_whitebox")
+class TSCTaskWhitebox(BaseTask):
+    '''
+    Evaluate a pretrained TSC controller under a white-box FGSM attack.
+    Never trains -- always loads the pretrained victim checkpoint.
+    '''
+    def run(self):
+        '''
+        run
+        Run the whole task (eval only, no training).
+
+        :param: None
+        :return: None
+        '''
+        try:
+            self.trainer.test(drop_load=False)
+        except RuntimeError as e:
+            self._process_error(e)
+            raise e
+
 @Registry.register_task("tsc_test")
 class TSCTestTask(BaseTask):
     '''

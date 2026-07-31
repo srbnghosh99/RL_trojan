@@ -1,15 +1,14 @@
 task:
-  description: use RL methods to optimize traffic signal control problems
+  description: white-box FGSM evaluation of a pretrained TSC controller
   task_name: tsc
 
 world:
-# necessary and distinctive parameters for simulators
   interval: 1.0
   seed: 0
   dir: data/
 
   saveReplay: False
-  report_log_mode: normal # cbengine
+  report_log_mode: normal
   report_log_rate: 10
 
   no_warning: True
@@ -33,11 +32,11 @@ trainer:
 
 model:
   name: "non-rl"
-  train_model: False
+  train_model: False   # EVAL ONLY -- this task never trains the victim
   test_model: True
   load_model: True
   graphic: False
-  vehicle_max: 1 # TODO: what is this for
+  vehicle_max: 1
   learning_rate: 0.001
   batch_size: 64
   gamma: 0.95
@@ -59,8 +58,14 @@ logger:
   save_rate: 5
   attention: False
 
-
-
-
+# White-box FGSM attacker parameters. See attacker/FGSM.py for full docs.
 attacker:
-  attack: None
+  epsilon: 0.15                       # FGSM step size in normalized feature space
+  max_vehicles_per_lane: 8            # cap on fake vehicles injected per lane per decision
+  max_total_vehicles: null            # optional global cap per decision (null = unlimited)
+  top_k_lanes: null                   # optional: only attack the k highest-gradient lanes
+  min_vehicles_per_selected_lane: 1
+  fallback_to_largest_abs_grad: True
+  targeted: False                     # untargeted: just try to flip the victim's decision
+  model_attr: null                    # let FGSM auto-detect (agent.model for MPLight/FRAP)
+  strict: False                       # if True, raise instead of silently skipping a failed attack

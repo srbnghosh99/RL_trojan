@@ -2,16 +2,55 @@
 FGSM.py
 
 White-box Fast Gradient Sign Method (FGSM) for DRL-based traffic-signal-control
-agents, physicalized as fake-vehicle injection.
+agents (written and verified against agent/mplight.py's FRAP network),
+physicalized as fake-vehicle injection into the real SUMO/CityFlow world.
 
 The Haydari et al. attack computes sign(grad_x J(theta, x, a)) with white-box
-access to the victim policy/Q-network.  A direct implementation would feed
-x_adv = x + epsilon * sign(grad) to the agent.  This implementation instead
-uses the FGSM gradient only to decide where fake vehicles should be added, then
-updates the simulator world's fake-vehicle counters and forces the victim agent
-to re-read its observation from the world.  In other words, the victim action is
-chosen from a poisoned traffic observation, not from an arbitrary feature-space
-vector.
+access to the victim policy/Q-network. A direct implementation would feed
+x_adv = x + epsilon * sign(grad) to the agent. This implementation instead
+uses the gradient to decide where fake vehicles should be added, injects them
+through the simulator's own fake-vehicle API, and forces the victim agent to
+re-read its observation from the world. The victim's action is chosen from a
+genuinely poisoned traffic observation, not from an arbitrary feature-space
+vector it will never actually see.
+
+Pipeline
+--------
+1. GRADIENT (compute_input_gradient): build the exact input FRAP expects --
+   concat([phase, lane_observation]) -- with requires_grad on the lane
+   observation ONLY. Phase is a discrete simulator fact, not something an
+   attacker can create by injecting vehicles, so it stays a constant. Backprop
+   a decision-oriented loss through the victim's OWN live network.
+
+2. OBJECTIVE (two modes):
+   - untargeted (default): loss = CE(Q, clean_action), gradient ASCENT --
+     push the observation away from whatever the agent currently intends to
+     do. Whichever alternative phase is easiest to trigger, wins.
+   - targeted: loss = CE(Q, target_action), gradient DESCENT -- push toward a
+     specific phase. If target_action is left as None, it defaults to the
+     agent's own worst-Q phase under the clean observation, i.e. "force the
+     controller into the choice it itself considers least useful."
+
+3. PHYSICALIZATION (gradient_to_fake_vehicle_plan): only the positive part of
+   the attack direction is realizable -- you can add fake vehicles, you
+   cannot delete real ones. Rather than giving every positive-gradient lane
+   the same flat vehicle count, a fixed total fake-vehicle BUDGET is split
+   across candidate lanes in proportion to |grad|, so lanes that matter most
+   to the decision get the most fake vehicles, subject to a per-lane cap
+   (max_vehicles_per_lane) and an optional global cap (max_total_vehicles).
+
+4. INJECTION: uses the world's real fake-vehicle API
+   (world.inject_fake_vehicles(intersection_id, approach, vehicle_counts),
+   world.reset_fake_vehicles()) -- the same API
+   trainer/tsc_trainer_adversarial_max.py uses for its learned PPO attacker --
+   so this plugs into the existing SUMO pipeline with no simulator-side
+   changes. A CityFlow-compatible fallback hook is kept for non-SUMO worlds.
+
+Scope: the gradient path is built for MPLight/FRAP-style agents (phase=True,
+one_hot=False|True, a single nn.Module reachable via agent.model). Other
+agent types (e.g. CoLight's graph-attention network) have a different
+forward signature; a couple of generic fallbacks are attempted but are
+unverified -- attacking a new agent type may need a dedicated adapter.
 
 Expected placement:
     attacker/FGSM.py       (recommended)
@@ -64,9 +103,12 @@ class FGSMInfo:
     linf_feature_budget: Optional[float] = None
     model_attr: Optional[str] = None
     forward_signature: Optional[str] = None
+    targeted: bool = False
+    target_mode: Optional[str] = None  # "explicit" | "auto_worst_action" | None (untargeted)
     clean_action: Optional[Any] = None
     target_action: Optional[Any] = None
     fake_vehicle_total: int = 0
+    fake_vehicle_budget: int = 0        # budget that was available to spend this decision
     fake_vehicle_plan: Dict[str, Any] = field(default_factory=dict)
     gradient_positive_features: int = 0
     error: Optional[str] = None
@@ -79,9 +121,12 @@ class FGSMInfo:
             "linf_feature_budget": self.linf_feature_budget,
             "model_attr": self.model_attr,
             "forward_signature": self.forward_signature,
+            "targeted": self.targeted,
+            "target_mode": self.target_mode,
             "clean_action": self.clean_action,
             "target_action": self.target_action,
             "fake_vehicle_total": self.fake_vehicle_total,
+            "fake_vehicle_budget": self.fake_vehicle_budget,
             "fake_vehicle_plan": self.fake_vehicle_plan,
             "gradient_positive_features": self.gradient_positive_features,
             "error": self.error,
@@ -104,10 +149,15 @@ class FGSM:
     """
     Physicalized white-box FGSM attacker for TSC agents.
 
-    epsilon is the FGSM magnitude in the observation feature space.  Since this
-    code is constrained to add fake vehicles, a positive FGSM sign on a lane
-    feature becomes ceil(epsilon * vehicle_max) fake vehicles when vehicle_max is
-    available, otherwise at least one fake vehicle.
+    epsilon sets the per-lane "unit" of attack strength: ceil(epsilon *
+    vehicle_max) fake vehicles (at least 1). The TOTAL budget for a decision
+    is that unit times the number of candidate (positive-gradient) lanes --
+    the same total a naive flat-allocation FGSM would spend -- but this
+    budget is then SPENT proportionally to |grad| across those lanes rather
+    than split evenly, so lanes that matter most to the decision get most of
+    the fake vehicles. max_vehicles_per_lane remains a hard per-lane cap;
+    max_total_vehicles, if set, overrides the computed budget with a fixed
+    global cap instead.
     """
 
     DEFAULT_MODEL_ATTRS: Tuple[str, ...] = (
@@ -191,10 +241,17 @@ class FGSM:
                 target_action=target_action,
             )
 
-            plan, positive_count = self.gradient_to_fake_vehicle_plan(agent, obs, grad_np)
+            plan, positive_count, budget = self.gradient_to_fake_vehicle_plan(agent, obs, grad_np)
             injected_total = plan.total
             if inject and world is not None:
                 injected_total = self.inject_fake_vehicles(world, plan)
+
+            if not self.targeted:
+                target_mode = None
+            elif target_action is not None:
+                target_mode = "explicit"
+            else:
+                target_mode = "auto_worst_action"
 
             info_obj = FGSMInfo(
                 success=(injected_total > 0),
@@ -203,9 +260,12 @@ class FGSM:
                 linf_feature_budget=self.epsilon,
                 model_attr=model_attr,
                 forward_signature=signature,
+                targeted=self.targeted,
+                target_mode=target_mode,
                 clean_action=self._jsonable(clean_action_np),
                 target_action=self._jsonable(target_action_np),
                 fake_vehicle_total=int(injected_total),
+                fake_vehicle_budget=int(budget),
                 fake_vehicle_plan=plan.as_dict(),
                 gradient_positive_features=int(positive_count),
             )
@@ -286,12 +346,24 @@ class FGSM:
         agent: Any,
         obs: ArrayLike,
         grad: ArrayLike,
-    ) -> Tuple[FakeVehiclePlan, int]:
+    ) -> Tuple[FakeVehiclePlan, int, int]:
         """
-        Physicalize FGSM signs as fake vehicles on incoming lanes.
+        Physicalize the attack direction as fake vehicles on incoming lanes.
 
-        Only positive FGSM signs can be represented directly because this attack
-        may add fake vehicles but may not delete real vehicles.
+        Only the positive part of the gradient is realizable: this attack may
+        add fake vehicles, it may never delete real ones.
+
+        Budget-proportional allocation: every candidate (positive-gradient,
+        or largest-|grad| fallback) lane is a candidate for fake vehicles.
+        The intersection's total budget -- ceil(epsilon * vehicle_max) times
+        the number of candidate lanes, or max_total_vehicles if explicitly
+        set -- is distributed across those lanes in proportion to |grad|,
+        then rounded and clamped to [min_vehicles_per_selected_lane,
+        max_vehicles_per_lane]. This spends the same total "attack effort"
+        a flat per-lane allocation would, but concentrates it on the lanes
+        that most influence the victim's decision.
+
+        Returns (plan, num_positive_gradient_features, total_budget_considered).
         """
         grad_np = self._to_numpy(grad).astype(np.float32, copy=False)
         if grad_np.ndim == 1:
@@ -299,11 +371,12 @@ class FGSM:
 
         generators = self._observation_generators(agent)
         vehicle_max = float(getattr(agent, "vehicle_max", 10.0) or 10.0)
-        base_count = int(math.ceil(abs(self.epsilon) * vehicle_max))
-        base_count = max(self.min_vehicles_per_selected_lane, base_count)
-        base_count = min(base_count, self.max_vehicles_per_lane)
+        unit = max(1, int(math.ceil(abs(self.epsilon) * vehicle_max)))
 
-        all_candidates: List[Tuple[float, str, str, int]] = []
+        lane_counts: Dict[str, int] = {}
+        by_intersection: Dict[str, Dict[str, int]] = {}
+        total = 0
+        total_budget = 0
         positive_count = 0
 
         rows = min(len(generators), grad_np.shape[0])
@@ -320,34 +393,44 @@ class FGSM:
 
             pos_idx = np.where(lane_grad > 0)[0]
             positive_count += int(len(pos_idx))
-            if len(pos_idx) > 0:
-                for local_idx in pos_idx:
-                    score = float(abs(lane_grad[int(local_idx)]))
-                    all_candidates.append((score, str(inter_id), str(lane_names[int(local_idx)]), base_count))
-            elif self.fallback_to_largest_abs_grad and len(lane_grad) > 0:
-                local_idx = int(np.argmax(np.abs(lane_grad)))
-                score = float(abs(lane_grad[local_idx]))
-                all_candidates.append((score, str(inter_id), str(lane_names[local_idx]), base_count))
 
-        all_candidates.sort(key=lambda x: x[0], reverse=True)
-        if self.top_k_lanes is not None:
-            all_candidates = all_candidates[: max(0, self.top_k_lanes)]
+            if len(pos_idx) == 0:
+                if not self.fallback_to_largest_abs_grad or len(lane_grad) == 0:
+                    continue
+                pos_idx = np.array([int(np.argmax(np.abs(lane_grad)))])
 
-        lane_counts: Dict[str, int] = {}
-        by_intersection: Dict[str, Dict[str, int]] = {}
-        total = 0
-        for _score, inter_id, lane, count in all_candidates:
-            if count <= 0:
+            if self.top_k_lanes is not None and len(pos_idx) > self.top_k_lanes:
+                order = np.argsort(-np.abs(lane_grad[pos_idx]))
+                pos_idx = pos_idx[order[: max(0, self.top_k_lanes)]]
+
+            weights = np.abs(lane_grad[pos_idx]).astype(np.float64)
+            weight_sum = float(weights.sum())
+            if weight_sum <= 0.0:
                 continue
-            remaining = None if self.max_total_vehicles is None else self.max_total_vehicles - total
-            if remaining is not None and remaining <= 0:
-                break
-            add_count = count if remaining is None else min(count, remaining)
-            lane_counts[lane] = lane_counts.get(lane, 0) + int(add_count)
-            by_intersection.setdefault(inter_id, {})[lane] = by_intersection.setdefault(inter_id, {}).get(lane, 0) + int(add_count)
-            total += int(add_count)
 
-        return FakeVehiclePlan(lane_counts=lane_counts, by_intersection=by_intersection), positive_count
+            intersection_budget = (
+                self.max_total_vehicles if self.max_total_vehicles is not None
+                else unit * len(pos_idx)
+            )
+            total_budget += int(intersection_budget)
+
+            shares = weights / weight_sum * intersection_budget
+            counts = np.clip(
+                np.round(shares),
+                self.min_vehicles_per_selected_lane,
+                self.max_vehicles_per_lane,
+            ).astype(int)
+
+            for local_idx, count in zip(pos_idx, counts):
+                if count <= 0:
+                    continue
+                lane = str(lane_names[int(local_idx)])
+                lane_counts[lane] = lane_counts.get(lane, 0) + int(count)
+                by_intersection.setdefault(str(inter_id), {})
+                by_intersection[str(inter_id)][lane] = by_intersection[str(inter_id)].get(lane, 0) + int(count)
+                total += int(count)
+
+        return FakeVehiclePlan(lane_counts=lane_counts, by_intersection=by_intersection), positive_count, total_budget
 
     # ------------------------------------------------------------------
     # Fake-vehicle world hooks
