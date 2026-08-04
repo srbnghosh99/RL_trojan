@@ -1,5 +1,5 @@
 includes:
-  - configs/agents/tsc_whitebox/base.yml
+  - configs/tsc_whitebox/base.yml
 
 model:
   name: mplight
