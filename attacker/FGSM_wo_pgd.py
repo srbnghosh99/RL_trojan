@@ -111,7 +111,6 @@ class FGSMInfo:
     fake_vehicle_budget: int = 0        # budget that was available to spend this decision
     fake_vehicle_plan: Dict[str, Any] = field(default_factory=dict)
     lane_gradients: Dict[str, float] = field(default_factory=dict)   # every lane's raw gradient, not just attacked ones
-    step_history: List[Dict[str, Any]] = field(default_factory=list)  # per-PGD-step trace: gradient + allocation before merging
     gradient_positive_features: int = 0
     error: Optional[str] = None
 
@@ -131,7 +130,6 @@ class FGSMInfo:
             "fake_vehicle_budget": self.fake_vehicle_budget,
             "fake_vehicle_plan": self.fake_vehicle_plan,
             "lane_gradients": self.lane_gradients,
-            "step_history": self.step_history,
             "gradient_positive_features": self.gradient_positive_features,
             "error": self.error,
         }
@@ -182,7 +180,6 @@ class FGSM:
         fallback_to_largest_abs_grad: bool = True,
         min_vehicles_per_selected_lane: int = 1,
         allocation: str = "proportional",
-        pgd_steps: int = 1,
         loss: str = "ce",
         targeted: bool = False,
         model_attr: Optional[str] = None,
@@ -200,7 +197,6 @@ class FGSM:
         if allocation not in ("proportional", "greedy"):
             raise ValueError(f"allocation must be 'proportional' or 'greedy', got {allocation!r}")
         self.allocation = allocation
-        self.pgd_steps = max(1, int(pgd_steps))
         self.loss = str(loss)
         self.targeted = bool(targeted)
         self.model_attr = model_attr
@@ -237,108 +233,23 @@ class FGSM:
         inject: bool = True,
         return_info: bool = False,
     ):
-        """
-        Compute FGSM gradients, convert them to fake vehicles, and inject.
-
-        If self.pgd_steps > 1, this runs iteratively: compute a gradient,
-        allocate a SLICE of the total budget, hypothetically add those
-        vehicles to a working copy of the observation (not the real
-        simulator), then recompute the gradient against that updated state
-        and repeat. Only after all steps finish is the final CUMULATIVE plan
-        injected into the real world, once. This lets the attack react to its
-        own earlier decisions within a single control step (the observation
-        can only actually change once the simulator advances, so "iterative"
-        here means iterating the attacker's own plan against a hypothetical
-        copy of the state, not against multiple real simulator steps).
-
-        With pgd_steps=1 (the default), this is exactly the original one-shot
-        FGSM behavior -- no change unless pgd_steps is explicitly raised.
-        """
+        """Compute FGSM gradients, convert them to fake vehicles, and inject."""
         if self.epsilon == 0:
             empty = FakeVehiclePlan()
             info = FGSMInfo(success=True, epsilon=0.0, linf_feature_budget=0.0).as_dict()
             return (empty, info) if return_info else empty
 
         try:
-            working_obs = self._to_numpy(obs).astype(np.float32, copy=False)
-            if working_obs.ndim == 1:
-                working_obs = working_obs.reshape(1, -1)
+            grad_np, loss_value, clean_action_np, target_action_np, model_attr, signature = self.compute_input_gradient(
+                agent=agent,
+                obs=obs,
+                phase=phase,
+                clean_action=clean_action,
+                target_action=target_action,
+            )
 
-            cumulative_lane_counts: Dict[str, int] = {}
-            cumulative_by_intersection: Dict[str, Dict[str, int]] = {}
-            total_budget_planned: Optional[int] = None
-            last_grad_map: Dict[str, float] = {}
-            last_loss_value = 0.0
-            last_clean_action_np = None
-            last_target_action_np = None
-            last_model_attr = None
-            last_signature = ""
-            positive_count_total = 0
-            step_history: List[Dict[str, Any]] = []
-
-            for step_idx in range(self.pgd_steps):
-                grad_np, loss_value, clean_action_np, target_action_np, model_attr, signature = self.compute_input_gradient(
-                    agent=agent,
-                    obs=working_obs,
-                    phase=phase,
-                    clean_action=clean_action,
-                    target_action=target_action,
-                )
-                last_grad_map = self.lane_gradient_map(agent, grad_np)
-                last_loss_value = loss_value
-                last_clean_action_np = clean_action_np
-                last_target_action_np = target_action_np
-                last_model_attr = model_attr
-                last_signature = signature
-
-                # Decide the TOTAL budget once, from the first step's gradient
-                # (how many lanes look attackable at the start) -- then just
-                # split that same fixed total across the remaining steps, so
-                # more steps means finer-grained allocation of the same
-                # overall attack effort, not a bigger attack.
-                if total_budget_planned is None:
-                    _dummy_plan, positive_count, total_budget_planned = self.gradient_to_fake_vehicle_plan(
-                        agent, working_obs, grad_np,
-                        already_injected=cumulative_lane_counts,
-                    )
-                else:
-                    positive_count = 0  # only counted once, from the first step
-
-                positive_count_total += positive_count
-                step_budgets = self._split_budget(total_budget_planned or 0, self.pgd_steps)
-                this_step_budget = step_budgets[step_idx]
-
-                if this_step_budget <= 0:
-                    break
-
-                step_plan, _pc, _b = self.gradient_to_fake_vehicle_plan(
-                    agent, working_obs, grad_np,
-                    already_injected=cumulative_lane_counts,
-                    budget_override=this_step_budget,
-                )
-
-                step_history.append({
-                    "step": step_idx,
-                    "budget": int(this_step_budget),
-                    "lane_gradients": dict(last_grad_map),
-                    "cumulative_before": dict(cumulative_lane_counts),
-                    "step_allocation": dict(step_plan.lane_counts),
-                })
-
-                if step_plan.total == 0:
-                    break  # no room left anywhere -- further steps won't help
-
-                for lane, cnt in step_plan.lane_counts.items():
-                    cumulative_lane_counts[lane] = cumulative_lane_counts.get(lane, 0) + cnt
-                for inter_id, lanes in step_plan.by_intersection.items():
-                    cumulative_by_intersection.setdefault(inter_id, {})
-                    for lane, cnt in lanes.items():
-                        cumulative_by_intersection[inter_id][lane] = cumulative_by_intersection[inter_id].get(lane, 0) + cnt
-
-                if step_idx < self.pgd_steps - 1:
-                    working_obs = self._apply_plan_to_obs(agent, working_obs, step_plan)
-
-            plan = FakeVehiclePlan(lane_counts=cumulative_lane_counts, by_intersection=cumulative_by_intersection)
+            plan, positive_count, budget = self.gradient_to_fake_vehicle_plan(agent, obs, grad_np)
+            lane_grad_map = self.lane_gradient_map(agent, grad_np)
             injected_total = plan.total
             if inject and world is not None:
                 injected_total = self.inject_fake_vehicles(world, plan)
@@ -353,20 +264,19 @@ class FGSM:
             info_obj = FGSMInfo(
                 success=(injected_total > 0),
                 epsilon=self.epsilon,
-                loss=float(last_loss_value),
+                loss=float(loss_value),
                 linf_feature_budget=self.epsilon,
-                model_attr=last_model_attr,
-                forward_signature=last_signature,
+                model_attr=model_attr,
+                forward_signature=signature,
                 targeted=self.targeted,
                 target_mode=target_mode,
-                clean_action=self._jsonable(last_clean_action_np),
-                target_action=self._jsonable(last_target_action_np),
+                clean_action=self._jsonable(clean_action_np),
+                target_action=self._jsonable(target_action_np),
                 fake_vehicle_total=int(injected_total),
-                fake_vehicle_budget=int(total_budget_planned or 0),
+                fake_vehicle_budget=int(budget),
                 fake_vehicle_plan=plan.as_dict(),
-                lane_gradients=last_grad_map,
-                step_history=step_history,
-                gradient_positive_features=int(positive_count_total),
+                lane_gradients=lane_grad_map,
+                gradient_positive_features=int(positive_count),
             )
             self.last_error = None
             return (plan, info_obj.as_dict()) if return_info else plan
@@ -492,55 +402,11 @@ class FGSM:
                 out[str(lane_name)] = float(lane_grad[local_idx])
         return out
 
-    @staticmethod
-    def _split_budget(total_budget: int, steps: int) -> List[int]:
-        """Split a total budget into `steps` integer chunks, as evenly as
-        possible, remainder going to the earliest steps."""
-        steps = max(1, steps)
-        total_budget = max(0, int(total_budget))
-        base = total_budget // steps
-        remainder = total_budget % steps
-        return [base + (1 if i < remainder else 0) for i in range(steps)]
-
-    def _lane_position_map(self, agent: Any) -> Dict[str, Tuple[int, int]]:
-        """lane_name -> (row_idx, col_idx) into the observation array, using
-        the same layout gradient_to_fake_vehicle_plan/lane_gradient_map walk."""
-        generators = self._observation_generators(agent)
-        positions: Dict[str, Tuple[int, int]] = {}
-        for row_idx, (_inter_id, lanes) in enumerate(generators):
-            if not lanes:
-                continue
-            start = self.lane_feature_offset
-            for local_idx, lane_name in enumerate(lanes):
-                positions[str(lane_name)] = (row_idx, start + local_idx)
-        return positions
-
-    def _apply_plan_to_obs(self, agent: Any, obs_np: np.ndarray, plan: FakeVehiclePlan) -> np.ndarray:
-        """
-        Return a NEW observation array with `plan`'s fake-vehicle counts
-        hypothetically added at the right lane positions. Used BETWEEN PGD
-        steps so the next gradient computation reacts to vehicles already
-        decided in earlier steps -- without touching the real simulator,
-        which only happens once, after all steps are done.
-        """
-        updated = obs_np.copy()
-        positions = self._lane_position_map(agent)
-        for lane_name, count in plan.lane_counts.items():
-            pos = positions.get(lane_name)
-            if pos is None:
-                continue
-            row, col = pos
-            if row < updated.shape[0] and col < updated.shape[1]:
-                updated[row, col] += count
-        return updated
-
     def gradient_to_fake_vehicle_plan(
         self,
         agent: Any,
         obs: ArrayLike,
         grad: ArrayLike,
-        already_injected: Optional[Dict[str, int]] = None,
-        budget_override: Optional[int] = None,
     ) -> Tuple[FakeVehiclePlan, int, int]:
         """
         Physicalize the attack direction as fake vehicles on incoming lanes.
@@ -558,19 +424,8 @@ class FGSM:
         a flat per-lane allocation would, but concentrates it on the lanes
         that most influence the victim's decision.
 
-        already_injected: lane_name -> count already committed in a PRIOR PGD
-            step this same decision. Each lane's per-lane cap becomes
-            max_vehicles_per_lane MINUS whatever it already has, so repeated
-            calls across PGD steps never push any single lane over its cap
-            in total, only per-call.
-
-        budget_override: if given, use this exact number as the budget for
-            THIS call (e.g. one PGD step's slice), instead of computing it
-            from epsilon/max_total_vehicles.
-
         Returns (plan, num_positive_gradient_features, total_budget_considered).
         """
-        already_injected = already_injected or {}
         grad_np = self._to_numpy(grad).astype(np.float32, copy=False)
         if grad_np.ndim == 1:
             grad_np = grad_np.reshape(1, -1)
@@ -615,21 +470,14 @@ class FGSM:
                 continue
 
             intersection_budget = (
-                budget_override if budget_override is not None
-                else self.max_total_vehicles if self.max_total_vehicles is not None
+                self.max_total_vehicles if self.max_total_vehicles is not None
                 else unit * len(pos_idx)
             )
             total_budget += int(intersection_budget)
 
-            # per-lane cap, reduced by whatever a prior PGD step already put there
-            remaining_caps = np.array([
-                max(0, self.max_vehicles_per_lane - already_injected.get(str(lane_names[int(li)]), 0))
-                for li in pos_idx
-            ])
-
             if self.allocation == "greedy":
                 # Exact solution to: maximize sum(|grad_i| * count_i)
-                # subject to 0 <= count_i <= remaining_cap_i and
+                # subject to 0 <= count_i <= max_vehicles_per_lane and
                 # sum(count_i) <= intersection_budget. This is a fractional
                 # knapsack with a per-item cap -- solved by filling items in
                 # decreasing weight order, each up to its cap, until the
@@ -646,21 +494,16 @@ class FGSM:
                 for j in order:
                     if remaining <= 0:
                         break
-                    take = min(int(remaining_caps[j]), remaining)
+                    take = min(self.max_vehicles_per_lane, remaining)
                     counts[j] = take
                     remaining -= take
             else:
                 shares = weights / weight_sum * intersection_budget
                 counts = np.clip(
                     np.round(shares),
-                    0,  # a floor of min_vehicles_per_selected_lane is applied below, capped by remaining room
+                    self.min_vehicles_per_selected_lane,
                     self.max_vehicles_per_lane,
                 ).astype(int)
-                counts = np.minimum(counts, remaining_caps)
-                # only apply the "give every selected lane at least this many"
-                # floor where there's still room for it
-                floor = np.minimum(self.min_vehicles_per_selected_lane, remaining_caps)
-                counts = np.maximum(counts, floor)
 
             for local_idx, count in zip(pos_idx, counts):
                 if count <= 0:
@@ -1218,4 +1061,3 @@ class FGSM:
             if str(getattr(inter, "id", "")) == str(inter_id):
                 return inter
         return None
-

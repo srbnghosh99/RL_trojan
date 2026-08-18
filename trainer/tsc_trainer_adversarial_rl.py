@@ -11,6 +11,78 @@ from attacker.multi_ppo_attacker import MultiPPOAttacker
 
 @Registry.register_trainer("tsc_rl_adversarial")
 class TSCTrainerRLAdversarial(BaseTrainer):
+    def _sample_signal_state(self, sim_time):
+        '''
+        Record SUMO's own ground-truth signal state -- identical
+        implementation to trainer/tsc_trainer_whitebox.py's version.
+        '''
+        eng = getattr(self.world, 'eng', None)
+        if eng is None or not hasattr(eng, 'trafficlight'):
+            return []
+        rows = []
+        for inter in getattr(self.world, 'intersections', []):
+            try:
+                state = eng.trafficlight.getRedYellowGreenState(inter.id)
+                controlled_lanes = eng.trafficlight.getControlledLanes(inter.id)
+            except Exception:
+                continue
+            rows.append({
+                'time': sim_time,
+                'tls_id': inter.id,
+                'controlled_lanes': ';'.join(controlled_lanes),
+                'state': state,
+            })
+        return rows
+
+    def _sample_vehicle_positions(self, sim_time):
+        '''
+        Continuous per-vehicle position sample, for the real space-time
+        diagram (position along the lane vs time). Identical implementation
+        to trainer/tsc_trainer_whitebox.py's version -- uses the same
+        already-established world_sumo.py calls (get_vehicle_lane(),
+        eng.vehicle.getLanePosition()).
+        '''
+        eng = getattr(self.world, 'eng', None)
+        if eng is None or not hasattr(eng, 'vehicle'):
+            return []
+        try:
+            vehicle_lane, _ = self.world.get_vehicle_lane()
+        except Exception:
+            return []
+        rows = []
+        for v, lane in vehicle_lane.items():
+            try:
+                pos = eng.vehicle.getLanePosition(v)
+            except Exception:
+                continue
+            rows.append({
+                'time': sim_time,
+                'vehicle_id': v,
+                'is_fake': 'fake_' in str(v),
+                'lane': lane,
+                'position': pos,
+            })
+        return rows
+
+    def _write_csv(self, rows, filename):
+        '''
+        Write a list of dict rows to a CSV in the current working directory.
+        Identical implementation to trainer/tsc_trainer_whitebox.py's version.
+        '''
+        if not rows:
+            return None
+        try:
+            import csv
+            csv_path = os.path.abspath(filename)
+            with open(csv_path, 'w', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+                writer.writeheader()
+                writer.writerows(rows)
+            return csv_path
+        except Exception as e:
+            self.logger.info(f"Failed to write {filename} (non-fatal): {e}")
+            return None
+
     '''
     Register TSCTrainer for traffic signal control tasks.
     '''
@@ -197,6 +269,7 @@ class TSCTrainerRLAdversarial(BaseTrainer):
         total_decision_num = 0
         flush = 0
         max_travel_time = -float('inf')
+        training_total_vehicles_injected = 0  # grand total across ALL episodes of this training run
 
         # ── LOG: Enable decision logging once before all episodes (so train_test logs accumulate) ──
         for ag in self.agents:
@@ -221,6 +294,7 @@ class TSCTrainerRLAdversarial(BaseTrainer):
                     self.env.eng.set_save_replay(False)
             episode_loss = []
             i = 0
+            episode_vehicles_injected = 0  # summed across every decision in THIS episode
 
             episode_critic_losses = []
             episode_actor_losses = []
@@ -268,6 +342,8 @@ class TSCTrainerRLAdversarial(BaseTrainer):
                                 )
                                 vehicles_injected_list[idx] = vehicles_injected
                             self.attacker_agents[idx].current_action = (approach_action, scale_action)
+
+                    episode_vehicles_injected += sum(vehicles_injected_list)
 
 
                     # === Step 5: Victim predicts phase based on (potentially poisoned) observation ===
@@ -367,7 +443,9 @@ class TSCTrainerRLAdversarial(BaseTrainer):
                 mean_critic_loss, mean_actor_loss, self.metric.rewards(), self.metric.queue(), self.metric.delay(), int(self.metric.throughput())))
             # if e % self.save_rate == 0:
             #     [ag.save_model(e=e) for ag in self.agents]
-            self.logger.info("episode:{}/{}, real avg travel time:{}".format(e, self.episodes, self.metric.real_average_travel_time()))
+            self.logger.info("episode:{}/{}, real avg travel time:{}, fake vehicles injected this episode:{}".format(
+                e, self.episodes, self.metric.real_average_travel_time(), episode_vehicles_injected))
+            training_total_vehicles_injected += episode_vehicles_injected
             for j in range(len(self.world.intersections)):
                 self.logger.debug("intersection:{}, mean_episode_reward:{}, mean_queue:{}".format(j, self.metric.lane_rewards()[j],\
                      self.metric.lane_queue()[j]))
@@ -403,6 +481,12 @@ class TSCTrainerRLAdversarial(BaseTrainer):
                     'Val/Travel Time': real_travel_time
                 }, step=e)
 
+
+        avg_vehicles_per_episode = training_total_vehicles_injected / self.episodes if self.episodes > 0 else 0
+        self.logger.info(
+            "Training complete: {} episodes, total fake vehicles injected: {}, "
+            "AVERAGE per episode: {:.1f}  <- use this one to compare against whitebox's single-run total".format(
+                self.episodes, training_total_vehicles_injected, avg_vehicles_per_episode))
 
         #model_path = os.path.join(Registry.mapping['logger_mapping']['path'].path, 'model', 'last_0')
         model_path = os.path.join(Registry.mapping['logger_mapping']['path'].path, 'model', 'last_0','best_0.pth')
@@ -584,13 +668,17 @@ class TSCTrainerRLAdversarial(BaseTrainer):
             a.reset()
         for a in self.attacker_agents:
             a.reset()
+        total_vehicles_injected = 0  # summed across every decision and every attacker agent, whole run
+        continuous_rows = []  # one row per (sim step, vehicle): continuous position, for the space-time diagram
+        signal_rows = []      # one row per (sim step, traffic light): SUMO's own ground-truth signal state
+        self.trajectory_sample_limit = 600  # only sample the first N raw steps (~60 decisions) -- keeps file size sane; raise further if you need more coverage
         for i in range(self.test_steps):
             if i % self.action_interval == 0:
                 phases = np.stack([ag.get_phase() for ag in self.agents])
                 actions = []
+                vehicles_injected = 0  # summed across attacker agents THIS decision (was reset per-agent before, undercounting when >1 attacker agent exists)
                 for idx, _ in enumerate(self.attacker_agents):
-                    vehicles_injected = 0
-                    
+
                     # === Step 1: Attacker observes state ===
                     state = self.attacker_agents[idx].get_state()
 
@@ -603,11 +691,18 @@ class TSCTrainerRLAdversarial(BaseTrainer):
                     if approach_action is not None and scale_action is not None:
                         approach_name = ['N', 'E', 'S', 'W'][approach_action % len(self.attacker_agents[idx]._approaches)]
                         vehicle_counts = scale_action.tolist() if isinstance(scale_action, np.ndarray) else scale_action
-                        vehicles_injected = self.world.inject_fake_vehicles(
+                        vehicles_injected += self.world.inject_fake_vehicles(
                             self.attacker_agents[idx].intersection_id,
                             approach_name,
                             vehicle_counts
                         )
+                total_vehicles_injected += vehicles_injected
+
+                # capture continuous positions WHILE fake vehicles still exist,
+                # before they're removed -- same pattern as tsc_trainer_whitebox.py
+                if i < self.trajectory_sample_limit:
+                    continuous_rows.extend(self._sample_vehicle_positions(i))
+                    signal_rows.extend(self._sample_signal_state(i))
 
                 obs = [ag.get_ob() for ag in self.agents]  # Get new observation after potential attacker's injection
                 for idx, ag in enumerate(self.agents):
@@ -621,6 +716,9 @@ class TSCTrainerRLAdversarial(BaseTrainer):
                     if _rec is not None:
                         _rec.step()
                     i += 1
+                    if i < self.trajectory_sample_limit:
+                        continuous_rows.extend(self._sample_vehicle_positions(i))
+                        signal_rows.extend(self._sample_signal_state(i))
                     rewards_list.append(np.stack(rewards))
                 rewards = np.mean(rewards_list, axis=0)  # [agent, intersection]
                 self.metric.update(rewards)
@@ -628,8 +726,21 @@ class TSCTrainerRLAdversarial(BaseTrainer):
                 break
         if _rec is not None:
             _rec.close()
-        self.logger.info("Final Travel Time is %.4f, mean rewards: %.4f, queue: %.4f, delay: %.4f, throughput: %d" % (self.metric.real_average_travel_time(), \
-            self.metric.rewards(), self.metric.queue(), self.metric.delay(), self.metric.throughput()))
+        self.logger.info("Final Travel Time is %.4f, mean rewards: %.4f, queue: %.4f, delay: %.4f, throughput: %d, "
+            "fake vehicles injected: %d" % (self.metric.real_average_travel_time(), \
+            self.metric.rewards(), self.metric.queue(), self.metric.delay(), self.metric.throughput(),
+            total_vehicles_injected))
+
+        continuous_csv_path = self._write_csv(continuous_rows, 'rl_attack_positions.csv')
+        if continuous_csv_path:
+            self.logger.info(
+                f"Continuous vehicle positions (first {self.trajectory_sample_limit} steps, "
+                f"for the space-time diagram) written to {continuous_csv_path}"
+            )
+
+        signal_csv_path = self._write_csv(signal_rows, 'rl_attack_signal_state.csv')
+        if signal_csv_path:
+            self.logger.info(f"Signal state (for the space-time diagram overlay) written to {signal_csv_path}")
 
         import os
         # out_path = os.path.join(Registry.mapping['logger_mapping']['path'].path, 'final_metrics.txt')
@@ -848,3 +959,4 @@ class TSCTesterRLAdversarial(TSCTrainerRLAdversarial):
                 ag.save_decision_log_to_excel(out_path)
 
         return self.metric
+
