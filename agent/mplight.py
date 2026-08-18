@@ -587,13 +587,47 @@ class MPLightAgent(RLAgent):
         '''
         self.model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        gpu_id = self._resolve_gpu_id()
         agents = MPLight_InerAgent(self.model, self.optimizer, self.replay_buffer, self.gamma, self.explorer,
                         minibatch_size=self.batch_size, replay_start_size=self.batch_size, 
                         phi=lambda x: np.asarray(x, dtype=np.float32),
                         # TODO check what is TARGET_UPDATE, target_update_interval, update_interval
-                        target_update_interval=self.dic_agent_conf.param["target_update"]*self.sub_agents, update_interval=self.sub_agents
+                        target_update_interval=self.dic_agent_conf.param["target_update"]*self.sub_agents, update_interval=self.sub_agents,
+                        gpu=gpu_id,
                         )
         return agents
+
+    def _resolve_gpu_id(self):
+        '''
+        Decide which device the victim model should actually live on:
+        CUDA if it's available on this machine AND the user didn't explicitly
+        ask for CPU via --device cpu; CPU (gpu=None, pfrl's convention)
+        otherwise. This mirrors the same "cuda if available else cpu" logic
+        BaseTrainer already uses for its own self.device (trainer/base_trainer.py),
+        which was previously never wired down to the model itself -- meaning
+        the victim always ended up on CPU regardless of --device.
+
+        :return: int GPU index to pass to pfrl (e.g. 0 for "cuda:0"), or None for CPU.
+        '''
+        if not torch.cuda.is_available():
+            return None
+
+        device_param = Registry.mapping['command_mapping']['setting'].param.get('device', None)
+        if device_param is None:
+            return 0  # CUDA available and nothing said otherwise -- default to cuda:0
+
+        device_str = str(device_param).strip().lower()
+        if device_str == 'cpu':
+            return None
+        if device_str.startswith('cuda'):
+            if ':' in device_str:
+                try:
+                    return int(device_str.split(':', 1)[1])
+                except ValueError:
+                    return 0
+            return 0
+        # unrecognized value -- fall back to CPU rather than guessing
+        return None
 
     def update_target_network(self):
         '''
@@ -640,7 +674,14 @@ class MPLightAgent(RLAgent):
         checkpoint = torch.load(model_name, map_location=torch.device('cpu'))
         self.agents_iner = self._build_model()
 
-        self.model.load_state_dict(checkpoint['model_state_dict'])
+        # strict=False: comp_mask is a fixed, deterministic buffer computed from
+        # phase_pairs (see relation()/register_buffer above) -- it's correctly
+        # set the moment _build_model() constructs a fresh FRAP instance, a few
+        # lines up, and was never something meaningful to load from a
+        # checkpoint. Older checkpoints saved before comp_mask was registered
+        # as a proper buffer won't have it in their state_dict at all; strict
+        # loading would wrongly error on that missing key.
+        self.model.load_state_dict(checkpoint['model_state_dict'], strict=False)
 
 
         # self.agents_iner.target_model.load_state_dict(checkpoint['model_state_dict'])
@@ -675,10 +716,11 @@ class MPLight_InerAgent(DQN):
     '''
     def __init__(self, q_function, optimizer,replay_buffer, 
                  gamma, explorer, minibatch_size, replay_start_size, phi, 
-                 target_update_interval, update_interval):
+                 target_update_interval, update_interval, gpu=None):
         super().__init__(q_function, optimizer, replay_buffer, gamma, explorer,
                          minibatch_size=minibatch_size, replay_start_size=replay_start_size, phi=phi,
-                         target_update_interval=target_update_interval, update_interval=update_interval)
+                         target_update_interval=target_update_interval, update_interval=update_interval,
+                         gpu=gpu)
         # self.batch_last_state = None
         # self.batch_last_action = None
 
@@ -773,7 +815,7 @@ class FRAP(nn.Module):
         super(FRAP, self).__init__()
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
-        self.comp_mask = competition_mask
+        self.register_buffer('comp_mask', competition_mask)
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
         self.one_hot = dic_agent_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
@@ -813,7 +855,7 @@ class FRAP(nn.Module):
             for i in range(batch_size):
                 act_idx = acts[i]
                 pair = self.phase_pairs[act_idx]
-                zeros = torch.zeros(num_movements, dtype=torch.int64)
+                zeros = torch.zeros(num_movements, dtype=torch.int64, device=states.device)
                 zeros[pair[0]] = 1
                 zeros[pair[1]] = 1
                 extended_acts.append(zeros)

@@ -592,9 +592,6 @@ class World(object):
             self.inside_vehicles.update({v: self.get_current_time()})
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
-            if 'fake_' in v:
-                self.fake_vehicles_caught_in_arrived_list = getattr(self, 'fake_vehicles_caught_in_arrived_list', 0) + 1
-                continue
             self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
         self._update_infos()
         self.vehicle_trajectory, self.vehicle_maxspeed = self.get_vehicle_trajectory()
@@ -1088,14 +1085,7 @@ class World(object):
                 #     keepRoute=1
                 # )
                 lane_len = self.eng.lane.getLength(lane_id)
-                # BUGFIX: was `lane_len * 0.8 + len(self.fake_vehicle_ids)` -- that counter
-                # grows across the ENTIRE run (tens of thousands over a full simulation)
-                # and was being added directly onto the position, placing fake vehicles
-                # tens of kilometers off the real lane. `k` is just this call's local
-                # index (0, 1, 2...), a small jitter to keep multiple fake vehicles from
-                # perfectly overlapping -- clipped so it can never exceed the lane itself.
-                pos = min(lane_len * 0.8 + k, max(0.0, lane_len - 0.1))
-                libsumo.vehicle.moveTo(vehID=veh_id, laneID=lane_id, pos=pos)
+                libsumo.vehicle.moveTo(vehID=veh_id, laneID=lane_id, pos=lane_len * 0.8 + len(self.fake_vehicle_ids))
                 libsumo.vehicle.slowDown(veh_id, 0.0, 10)
                 intersection.waiting_times[veh_id] = 2.05
                 libsumo.vehicle.setSpeed(veh_id, 0.0)
@@ -1121,4 +1111,3 @@ class World(object):
                     traci.vehicle.remove(veh_id)
 
         self._refresh_observations()
-

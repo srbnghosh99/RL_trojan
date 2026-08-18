@@ -60,9 +60,11 @@ logger:
 
 # White-box FGSM attacker parameters. See attacker/FGSM.py for full docs.
 attacker:
-  epsilon: 0.15                       # FGSM step size in normalized feature space
-  max_vehicles_per_lane: 8            # cap on fake vehicles injected per lane per decision
-  max_total_vehicles: null            # optional global cap per decision (null = unlimited)
+  epsilon: 0.15  # FGSM step size in normalized feature space
+  pgd_steps: 2 
+  max_vehicles_per_lane: 3            # cap on fake vehicles injected per lane per decision
+  max_total_vehicles: 5            # optional global cap per decision (null = unlimited)
+  allocation: "greedy" 
   top_k_lanes: null                   # optional: only attack the k highest-gradient lanes
   min_vehicles_per_selected_lane: 1
   fallback_to_largest_abs_grad: True

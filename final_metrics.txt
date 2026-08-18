@@ -224,3 +224,8 @@ task: tsc | agent: maxqueue | Final Travel Time is 343.6768, mean rewards: -2.01
 task: tsc_rl_adversarial | agent: maxqueue | Final Travel Time is 415.0785, mean rewards: 1453.8672, queue: 5.5774, delay: 0.2029, throughput: 2661
 task: tsc | agent: maxqueue | Final Travel Time is 184.2495, mean rewards: -8.8597, queue: 70.4583, delay: 0.7466, throughput: 2008
 task: tsc_rl_adversarial | agent: mplight | Final Travel Time is 198.4662, mean rewards: 72.8045, queue: 72.7778, delay: 0.6943, throughput: 2012
+task: tsc_rl_adversarial | agent: mplight | Final Travel Time is 166.7363, mean rewards: 58.5495, queue: 58.5306, delay: 0.6768, throughput: 2067
+task: tsc_rl_adversarial | agent: mplight | Final Travel Time is 166.7363, mean rewards: 58.5495, queue: 58.5306, delay: 0.6768, throughput: 2067
+task: tsc_rl_adversarial | agent: mplight | Final Travel Time is 166.7363, mean rewards: 58.5495, queue: 58.5306, delay: 0.6768, throughput: 2067
+task: tsc_rl_adversarial | agent: mplight | Final Travel Time is 166.7363, mean rewards: 58.5495, queue: 58.5306, delay: 0.6768, throughput: 2067
+task: tsc_rl_adversarial | agent: mplight | Final Travel Time is 166.7363, mean rewards: 58.5495, queue: 58.5306, delay: 0.6768, throughput: 2067
