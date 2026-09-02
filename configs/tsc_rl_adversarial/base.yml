@@ -26,7 +26,7 @@ trainer:
   test_steps: 3600
   yellow_length: 5
   action_interval: 10
-  episodes: 200
+  episodes: 100
   update_model_rate: 1
   update_target_rate: 10
   test_when_train: True
@@ -71,9 +71,9 @@ attacker:
   max_grad_norm: 0.5       # Gradient clipping norm
   num_segments: 2          # Number of upstream segments per approach
   num_approaches: 4        # Number of approaches (N/E/S/W)
-  max_vehicles_per_segment: 10  # Max fake vehicles to inject per segment
+  max_vehicles_per_segment: 5  # Max fake vehicles to inject per segment
   penalty_lambda: 0.01     # Penalty for using fake vehicles in reward
-  max_total_vehicles: 8 
+#   max_total_vehicles: 8
 
 
 

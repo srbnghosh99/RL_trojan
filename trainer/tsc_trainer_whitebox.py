@@ -187,6 +187,51 @@ class TSCTrainerWhitebox(BaseTrainer):
     def train_test(self, e):
         pass
 
+
+    def _sample_signal_state(self, sim_time):
+        """SUMO ground-truth signal state (ported from tsc_trainer_adversarial_rl.py)."""
+        eng = getattr(self.world, 'eng', None)
+        if eng is None or not hasattr(eng, 'trafficlight'):
+            return []
+        rows = []
+        for inter in getattr(self.world, 'intersections', []):
+            try:
+                state = eng.trafficlight.getRedYellowGreenState(inter.id)
+                controlled_lanes = eng.trafficlight.getControlledLanes(inter.id)
+            except Exception:
+                continue
+            rows.append({
+                'time': sim_time,
+                'tls_id': inter.id,
+                'controlled_lanes': ';'.join(controlled_lanes),
+                'state': state,
+            })
+        return rows
+
+    def _sample_vehicle_positions(self, sim_time):
+        """Per-vehicle lane position (ported from tsc_trainer_adversarial_rl.py)."""
+        eng = getattr(self.world, 'eng', None)
+        if eng is None or not hasattr(eng, 'vehicle'):
+            return []
+        try:
+            vehicle_lane, _ = self.world.get_vehicle_lane()
+        except Exception:
+            return []
+        rows = []
+        for v, lane in vehicle_lane.items():
+            try:
+                pos = eng.vehicle.getLanePosition(v)
+            except Exception:
+                continue
+            rows.append({
+                'time': sim_time,
+                'vehicle_id': v,
+                'is_fake': 'fake_' in str(v),
+                'lane': lane,
+                'position': pos,
+            })
+        return rows
+
     def test(self, drop_load=True):
         '''
         test
@@ -216,6 +261,9 @@ class TSCTrainerWhitebox(BaseTrainer):
         timeseries_rows = []  # one row per decision: (sim_time, fake_injected, total_vehicles, avg_wait_time)
         gradient_rows = []    # one row per (decision, agent, lane): raw gradient + fake vehicles placed there
         pgd_step_rows = []    # one row per (sampled decision, agent, step, lane): PGD refinement trace
+        position_rows = []    # one row per (sampled step, vehicle): space-time trajectory data
+        signal_rows = []      # one row per (sampled step, traffic light): ground-truth signal state
+        self.trajectory_sample_limit = 600  # only sample the first N raw steps -- keeps file size sane
         pgd_sample_every = 20  # only log full step traces for every Nth decision -- avoids huge files
                                # when pgd_steps > 1, since this logs every lane at every step
 
@@ -273,6 +321,11 @@ class TSCTrainerWhitebox(BaseTrainer):
                                     'fake_vehicles_this_step': step_allocation.get(lane_name, 0),
                                 })
 
+                # --- sample the space-time state WHILE the fakes still exist ---
+                if i < self.trajectory_sample_limit:
+                    position_rows.extend(self._sample_vehicle_positions(i))
+                    signal_rows.extend(self._sample_signal_state(i))
+
                 # victim reads its (now poisoned) observation and decides
                 obs = [ag.get_ob() for ag in self.agents]
                 for idx, ag in enumerate(self.agents):
@@ -327,6 +380,14 @@ class TSCTrainerWhitebox(BaseTrainer):
         grad_csv_path = self._write_csv(gradient_rows, 'fgsm_lane_gradients.csv')
         if grad_csv_path:
             self.logger.info(f"Per-lane gradient log written to {grad_csv_path}")
+
+        pos_csv_path = self._write_csv(position_rows, 'fgsm_attack_positions.csv')
+        if pos_csv_path:
+            self.logger.info(f"Vehicle position trace written to {pos_csv_path}")
+
+        sig_csv_path = self._write_csv(signal_rows, 'fgsm_attack_signal_state.csv')
+        if sig_csv_path:
+            self.logger.info(f"Signal state trace written to {sig_csv_path}")
 
         pgd_csv_path = self._write_csv(pgd_step_rows, 'fgsm_pgd_steps.csv')
         if pgd_csv_path:

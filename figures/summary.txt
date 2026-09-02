@@ -1,0 +1,32 @@
+==================================================================
+FIGURE GENERATION
+==================================================================
+[ok]   White-box FGSM: 8 injected lane(s) -> road_1_0_1_1=60, road_2_1_2_1=53, road_1_2_3_1=49, road_1_0_1_0=49, road_0_1_0_1=30, road_0_1_0_0=26
+[ok]   RL (multi-PPO): 2 injected lane(s) -> road_1_2_3_0=298, road_1_2_3_1=297
+
+--- per-lane space-time ---
+  space_time__fgsm__road_1_0_1_1.png   (60 injections)
+  space_time__fgsm__road_1_0_1_1_zoom.png
+  space_time__fgsm__road_2_1_2_1.png   (53 injections)
+  space_time__fgsm__road_2_1_2_1_zoom.png
+  space_time__fgsm__road_1_2_3_1.png   (49 injections)
+  space_time__fgsm__road_1_2_3_1_zoom.png
+  space_time__fgsm__road_1_0_1_0.png   (49 injections)
+  space_time__fgsm__road_1_0_1_0_zoom.png
+  space_time__rl__road_1_2_3_0.png   (298 injections)
+  space_time__rl__road_1_2_3_0_zoom.png
+  space_time__rl__road_1_2_3_1.png   (297 injections)
+  space_time__rl__road_1_2_3_1_zoom.png
+
+--- FGSM vs RL comparison ---
+  space_time_compare.png
+  space_time_compare_zoom.png
+
+--- green share ---
+  green_share.png (+ .csv)
+
+--- FGSM time series ---
+  fgsm_timeseries.png
+
+==================================================================
+done -> figures/
