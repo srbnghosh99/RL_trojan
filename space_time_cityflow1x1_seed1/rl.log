@@ -1,0 +1,78 @@
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 4 when switching to phase 1.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 0 when switching to phase 3.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 6 when switching to phase 5.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 2 when switching to phase 7.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 12 when switching to phase 9.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 4 when switching to phase 11.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 8 when switching to phase 13.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 0 when switching to phase 15.
+Warning: Vehicle '155' performs emergency braking on lane 'road_2_1_2_0' with decel=9.00, wished=4.50, severity=1.00, time=310.00.
+Warning: Vehicle '106' performs emergency braking on lane 'road_1_2_3_0' with decel=9.00, wished=4.50, severity=1.00, time=345.00.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 4 when switching to phase 1.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 0 when switching to phase 3.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 6 when switching to phase 5.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 2 when switching to phase 7.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 12 when switching to phase 9.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 4 when switching to phase 11.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 8 when switching to phase 13.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 0 when switching to phase 15.
+Warning: Teleporting vehicle '12'; waited too long (yield), lane='road_0_1_0_1', time=360.00.
+Warning: Vehicle '12' ends teleporting on edge 'road_1_1_1', time=360.00.
+Warning: Teleporting vehicle '31'; waited too long (yield), lane='road_2_1_2_1', time=387.00.
+Warning: Vehicle '31' ends teleporting on edge 'road_1_1_3', time=387.00.
+Warning: Vehicle '239' performs emergency braking on lane 'road_0_1_0_0' with decel=9.00, wished=4.50, severity=1.00, time=430.00.
+Warning: Teleporting vehicle '119'; waited too long (yield), lane='road_2_1_2_1', time=692.00.
+Warning: Vehicle '119' ends teleporting on edge 'road_1_1_3', time=692.00.
+Warning: Teleporting vehicle '121'; waited too long (yield), lane='road_2_1_2_1', time=997.00.
+Warning: Vehicle '121' ends teleporting on edge 'road_1_1_3', time=997.00.
+Warning: Teleporting vehicle '537'; waited too long (yield), lane='road_1_0_1_1', time=1243.00.
+Warning: Vehicle '537' ends teleporting on edge 'road_1_1_2', time=1243.00.
+Warning: Teleporting vehicle '466'; waited too long (yield), lane='road_2_1_2_1', time=1410.00.
+Warning: Vehicle '466' ends teleporting on edge 'road_1_1_3', time=1410.00.
+Warning: Vehicle '961' performs emergency braking on lane 'road_1_0_1_0' with decel=9.00, wished=4.50, severity=1.00, time=1550.00.
+Warning: Vehicle '961' performs emergency stop at the end of lane 'road_1_0_1_0' because of a red traffic light (decel=-9.77, offset=0.25), time=1550.00.
+Warning: Vehicle '1012' performs emergency braking on lane 'road_0_1_0_1' with decel=9.00, wished=4.50, severity=1.00, time=1630.00.
+Warning: Vehicle '1012' performs emergency stop at the end of lane 'road_0_1_0_1' because of a red traffic light (decel=-12.17, offset=0.41), time=1630.00.
+Warning: Teleporting vehicle '579'; waited too long (yield), lane='road_2_1_2_1', time=1715.00.
+Warning: Vehicle '579' ends teleporting on edge 'road_1_1_3', time=1715.00.
+Warning: Teleporting vehicle '581'; waited too long (yield), lane='road_2_1_2_1', time=2020.00.
+Warning: Vehicle '581' ends teleporting on edge 'road_1_1_3', time=2020.00.
+Warning: Teleporting vehicle '1085'; waited too long (yield), lane='road_1_0_1_1', time=2043.00.
+Warning: Vehicle '1085' ends teleporting on edge 'road_1_1_2', time=2043.00.
+Warning: Teleporting vehicle '1288'; waited too long (yield), lane='road_1_0_1_1', time=2372.00.
+Warning: Vehicle '1288' ends teleporting on edge 'road_1_1_2', time=2372.00.
+Warning: Vehicle '1451' performs emergency braking on lane 'road_0_1_0_0' with decel=9.00, wished=4.50, severity=1.00, time=2480.00.
+Warning: Teleporting vehicle '1344'; waited too long (yield), lane='road_2_1_2_1', time=2553.00.
+Warning: Vehicle '1344' ends teleporting on edge 'road_1_1_3', time=2553.00.
+Warning: Teleporting vehicle '1293'; waited too long (yield), lane='road_1_0_1_1', time=2676.00.
+Warning: Vehicle '1293' ends teleporting on edge 'road_1_1_2', time=2676.00.
+Warning: Teleporting vehicle '1512'; waited too long (yield), lane='road_0_1_0_1', time=2776.00.
+Warning: Vehicle '1512' ends teleporting on edge 'road_1_1_1', time=2776.00.
+Warning: Teleporting vehicle '1384'; waited too long (yield), lane='road_2_1_2_1', time=2857.00.
+Warning: Vehicle '1384' ends teleporting on edge 'road_1_1_3', time=2857.00.
+Warning: Teleporting vehicle '1403'; waited too long (yield), lane='road_2_1_2_1', time=3162.00.
+Warning: Vehicle '1403' ends teleporting on edge 'road_1_1_3', time=3162.00.
+Warning: Teleporting vehicle '1695'; waited too long (yield), lane='road_1_0_1_1', time=3244.00.
+Warning: Vehicle '1695' ends teleporting on edge 'road_1_1_2', time=3244.00.
+Warning: Teleporting vehicle '1440'; waited too long (yield), lane='road_2_1_2_1', time=3467.00.
+Warning: Vehicle '1440' ends teleporting on edge 'road_1_1_3', time=3467.00.
+FCD will be written to: data/output_data/replay/fcd_run_1787171820.xml
+TLS will be written to: data/output_data/replay/tls_run_1787171820.xml
+building world...
+Logging TLS state for: ('intersection_1_1',)
+Connection ID hz1x1
+<agent.mplight.MPLight_InerAgent object at 0x12a49a250>
+DEBUG test_steps = 3600
+DEBUG test_steps = 200
+[LaneRecorder] tracking 72 lanes -> lane_metrics.csv
+DEBUG loading attacker from: data/output_data/tsc_rl_adversarial/mplight/cityflow1x1/sumo_4/model/best_0.pth
+Simulation cost: 0.2032/2.1542|9.4303%
+[LaneRecorder] 259200 rows -> lane_metrics.csv
+2026-08-19 15:37:03 (INFO): Final Travel Time is 130.9467, mean rewards: 45.9192, queue: 45.8944, delay: 0.6538, throughput: 2156
+[MPLight] Saved 360 decisions to data/output_data/decision_logs/mplight_decisions_tsc_test_rl_adversarial_rank0.xlsx
+2026-08-19 15:37:03 (INFO): Total time taken: 3.0997170000000005
+2026-08-19 15:37:03 (INFO): Total time taken: 3.67 seconds (0.00 hours)

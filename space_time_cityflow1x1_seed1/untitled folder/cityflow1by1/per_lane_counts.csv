@@ -1,0 +1,9 @@
+lane,White-box FGSM_real,White-box FGSM_fake,RL (multi-PPO)_real,RL (multi-PPO)_fake
+road_0_1_0_0,72,26,72,0
+road_0_1_0_1,10,30,15,0
+road_1_0_1_0,129,49,78,0
+road_1_0_1_1,33,60,25,0
+road_1_2_3_0,39,13,82,116
+road_1_2_3_1,19,49,19,116
+road_2_1_2_0,53,20,53,4
+road_2_1_2_1,7,53,7,4

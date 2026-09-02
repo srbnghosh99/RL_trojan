@@ -1,0 +1,106 @@
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 4 when switching to phase 1.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 0 when switching to phase 3.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 6 when switching to phase 5.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 2 when switching to phase 7.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 12 when switching to phase 9.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 4 when switching to phase 11.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 8 when switching to phase 13.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 0 when switching to phase 15.
+Warning: Vehicle '155' performs emergency braking on lane 'road_2_1_2_0' with decel=9.00, wished=4.50, severity=1.00, time=310.00.
+Warning: Vehicle '106' performs emergency braking on lane 'road_1_2_3_0' with decel=9.00, wished=4.50, severity=1.00, time=345.00.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 4 when switching to phase 1.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 0 when switching to phase 3.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 6 when switching to phase 5.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 2 when switching to phase 7.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 12 when switching to phase 9.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 4 when switching to phase 11.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 8 when switching to phase 13.
+Warning: Missing yellow phase in tlLogic 'intersection_1_1', program '0' for tl-index 0 when switching to phase 15.
+FCD will be written to: data/output_data/replay/fcd_run_1787171813.xml
+TLS will be written to: data/output_data/replay/tls_run_1787171813.xml
+building world...
+Logging TLS state for: ('intersection_1_1',)
+Connection ID hz1x1
+2026-08-19 15:36:53 (INFO): [FGSM] --device=cuda:0 was requested, but the victim model actually lives on cpu (its pfrl wrapper fixes this at construction time and never reads --device). FGSM computes its gradient on cpu to match the real model rather than relocating it -- relocating it would desync it from its own wrapper. (logged once)
+Warning: Teleporting vehicle '36'; waited too long (yield), lane='road_1_2_3_0', time=406.00.
+Warning: Vehicle '36' ends teleporting on edge 'road_1_1_3', time=406.00.
+Warning: Teleporting vehicle '39'; waited too long (yield), lane='road_1_2_3_0', time=712.00.
+Warning: Vehicle '39' ends teleporting on edge 'road_1_1_3', time=712.00.
+Warning: Teleporting vehicle '268'; waited too long (yield), lane='road_2_1_2_0', time=741.00.
+Warning: Vehicle '268' ends teleporting on edge 'road_1_1_2', time=741.00.
+Warning: Teleporting vehicle '40'; waited too long (yield), lane='road_1_2_3_0', time=1016.00.
+Warning: Vehicle '40' ends teleporting on edge 'road_1_1_3', time=1016.00.
+Warning: Teleporting vehicle '590'; waited too long (yield), lane='road_0_1_0_0', time=1223.00.
+Warning: Vehicle '590' ends teleporting on edge 'road_1_1_0', time=1223.00.
+Warning: Teleporting vehicle '692'; waited too long (yield), lane='road_0_1_0_1', time=1431.00.
+Warning: Vehicle '692' ends teleporting on edge 'road_1_1_1', time=1431.00.
+Warning: Teleporting vehicle '596'; waited too long (yield), lane='road_0_1_0_0', time=1528.00.
+Warning: Vehicle '596' ends teleporting on edge 'road_1_1_0', time=1528.00.
+Warning: Teleporting vehicle '749'; waited too long (yield), lane='road_2_1_2_0', time=1529.00.
+Warning: Vehicle '749' ends teleporting on edge 'road_1_1_2', time=1529.00.
+Warning: Teleporting vehicle '756'; waited too long (yield), lane='road_1_0_1_1', time=1547.00.
+Warning: Vehicle '756' ends teleporting on edge 'road_1_1_2', time=1547.00.
+Warning: Teleporting vehicle '801'; waited too long (yield), lane='road_2_1_2_1', time=1617.00.
+Warning: Vehicle '801' ends teleporting on edge 'road_1_1_3', time=1617.00.
+Warning: Teleporting vehicle '695'; waited too long (yield), lane='road_0_1_0_1', time=1737.00.
+Warning: Vehicle '695' ends teleporting on edge 'road_1_1_1', time=1737.00.
+Warning: Teleporting vehicle '900'; waited too long (yield), lane='road_1_2_3_1', time=1767.00.
+Warning: Vehicle '900' ends teleporting on edge 'road_1_1_0', time=1767.00.
+Warning: Teleporting vehicle '627'; waited too long (yield), lane='road_0_1_0_0', time=1833.00.
+Warning: Vehicle '627' ends teleporting on edge 'road_1_1_0', time=1833.00.
+Warning: Teleporting vehicle '750'; waited too long (yield), lane='road_2_1_2_0', time=1835.00.
+Warning: Vehicle '750' ends teleporting on edge 'road_1_1_2', time=1835.00.
+Warning: Teleporting vehicle '752'; waited too long (yield), lane='road_2_1_2_0', time=2140.00.
+Warning: Vehicle '752' ends teleporting on edge 'road_1_1_2', time=2140.00.
+Warning: Teleporting vehicle '1186'; waited too long (yield), lane='road_1_0_1_1', time=2203.00.
+Warning: Vehicle '1186' ends teleporting on edge 'road_1_1_2', time=2203.00.
+Warning: Teleporting vehicle '1184'; waited too long (yield), lane='road_1_0_1_0', time=2205.00.
+Warning: Vehicle '1184' ends teleporting on edge 'road_1_1_1', time=2205.00.
+Warning: Teleporting vehicle '1210'; waited too long (yield), lane='road_1_2_3_0', time=2253.00.
+Warning: Vehicle '1210' ends teleporting on edge 'road_1_1_3', time=2253.00.
+Warning: Teleporting vehicle '1211'; waited too long (yield), lane='road_1_2_3_1', time=2256.00.
+Warning: Vehicle '1211' ends teleporting on edge 'road_1_1_0', time=2256.00.
+Warning: Teleporting vehicle '1298'; waited too long (yield), lane='road_2_1_2_1', time=2378.00.
+Warning: Vehicle '1298' ends teleporting on edge 'road_1_1_3', time=2378.00.
+Warning: Teleporting vehicle '1228'; waited too long (yield), lane='road_1_0_1_1', time=2507.00.
+Warning: Vehicle '1228' ends teleporting on edge 'road_1_1_2', time=2507.00.
+Warning: Teleporting vehicle '1185'; waited too long (yield), lane='road_1_0_1_0', time=2509.00.
+Warning: Vehicle '1185' ends teleporting on edge 'road_1_1_1', time=2509.00.
+Warning: Teleporting vehicle '1212'; waited too long (yield), lane='road_1_2_3_0', time=2558.00.
+Warning: Vehicle '1212' ends teleporting on edge 'road_1_1_3', time=2558.00.
+Warning: Teleporting vehicle '1217'; waited too long (yield), lane='road_1_2_3_1', time=2562.00.
+Warning: Vehicle '1217' ends teleporting on edge 'road_1_1_0', time=2562.00.
+Warning: Teleporting vehicle '1300'; waited too long (yield), lane='road_2_1_2_1', time=2683.00.
+Warning: Vehicle '1300' ends teleporting on edge 'road_1_1_3', time=2683.00.
+Warning: Teleporting vehicle '1478'; waited too long (yield), lane='road_0_1_0_1', time=2718.00.
+Warning: Vehicle '1478' ends teleporting on edge 'road_1_1_1', time=2718.00.
+Warning: Teleporting vehicle '1214'; waited too long (yield), lane='road_1_2_3_0', time=2862.00.
+Warning: Vehicle '1214' ends teleporting on edge 'road_1_1_3', time=2862.00.
+Warning: Teleporting vehicle '1586'; waited too long (yield), lane='road_2_1_2_0', time=2924.00.
+Warning: Vehicle '1586' ends teleporting on edge 'road_1_1_2', time=2924.00.
+Warning: Teleporting vehicle '1611'; waited too long (yield), lane='road_0_1_0_0', time=2972.00.
+Warning: Vehicle '1611' ends teleporting on edge 'road_1_1_0', time=2972.00.
+Warning: Teleporting vehicle '1500'; waited too long (yield), lane='road_1_0_1_0', time=3121.00.
+Warning: Vehicle '1500' ends teleporting on edge 'road_1_1_1', time=3121.00.
+Warning: Teleporting vehicle '1608'; waited too long (yield), lane='road_2_1_2_0', time=3229.00.
+Warning: Vehicle '1608' ends teleporting on edge 'road_1_1_2', time=3229.00.
+Warning: Teleporting vehicle '1501'; waited too long (yield), lane='road_1_0_1_0', time=3425.00.
+Warning: Vehicle '1501' ends teleporting on edge 'road_1_1_1', time=3425.00.
+Warning: Teleporting vehicle '1614'; waited too long (yield), lane='road_2_1_2_0', time=3534.00.
+Warning: Vehicle '1614' ends teleporting on edge 'road_1_1_2', time=3534.00.
+Warning: Teleporting vehicle '1991'; waited too long (yield), lane='road_2_1_2_1', time=3552.00.
+Warning: Vehicle '1991' ends teleporting on edge 'road_1_1_3', time=3552.00.
+Warning: Teleporting vehicle '1853'; waited too long (yield), lane='road_0_1_0_0', time=3594.00.
+Warning: Vehicle '1853' ends teleporting on edge 'road_1_1_0', time=3594.00.
+2026-08-19 15:36:57 (INFO): Final Travel Time is 218.5030, mean rewards: -9.8210, queue: 78.6528, delay: 0.6541, throughput: 1827, fake vehicles injected: 1800 (attack calls: 360, successful: 360)
+2026-08-19 15:36:57 (INFO): Per-decision time series written to /Users/shrabanighosh/UNCC/Spring2026/RL_trojan/fgsm_timeseries.csv
+2026-08-19 15:36:57 (INFO): Per-lane gradient log written to /Users/shrabanighosh/UNCC/Spring2026/RL_trojan/fgsm_lane_gradients.csv
+2026-08-19 15:36:57 (INFO): Vehicle position trace written to /Users/shrabanighosh/UNCC/Spring2026/RL_trojan/fgsm_attack_positions.csv
+2026-08-19 15:36:57 (INFO): Signal state trace written to /Users/shrabanighosh/UNCC/Spring2026/RL_trojan/fgsm_attack_signal_state.csv
+2026-08-19 15:36:57 (INFO): PGD per-step refinement trace written to /Users/shrabanighosh/UNCC/Spring2026/RL_trojan/fgsm_pgd_steps.csv
+2026-08-19 15:36:57 (INFO): Total time taken: 4.121945
+2026-08-19 15:36:57 (INFO): Total time taken: 4.45 seconds (0.00 hours)
