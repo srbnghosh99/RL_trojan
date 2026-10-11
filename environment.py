@@ -54,15 +54,33 @@ class TSCEnv(gym.Env):
         # Advance simulation with victim signal actions
         self.world.step(actions)
 
+        #### previous code ####
                 # Get observations from all agents (includes fake vehicles if injected)
+        # if self.attacker_agents is not None and len(self.attacker_agents) > 0:
+        #     # get reward for the attacker agents based on the current state of the environment after stepping
+        #     # TODO: What could be the best reward function for the attacker? Maybe a combination of delay increase and stealthiness?
+        #     lane_waiting_vehicles = self.world.get_info("lane_waiting_count")
+        #     attacker_reward = sum(lane_waiting_vehicles.values()) - self.previous_metric_value
+        #     # self.previous_metric_value = sum(lane_waiting_vehicles.values())
+        #     obs = [agent.get_ob() for agent in self.agents]
+        #     rewards = [attacker_reward]
+        # else:
+        #     if not len(self.agents) == 1:
+        #         obs = [agent.get_ob() for agent in self.agents]
+        #         rewards = [agent.get_reward() for agent in self.agents]
+        #     else:
+        #         obs = [self.agents[0].get_ob()]
+        #         rewards = [self.agents[0].get_reward()]
+
+        ### new code ##
         if self.attacker_agents is not None and len(self.attacker_agents) > 0:
-            # get reward for the attacker agents based on the current state of the environment after stepping
-            # TODO: What could be the best reward function for the attacker? Maybe a combination of delay increase and stealthiness?
-            lane_waiting_vehicles = self.world.get_info("lane_waiting_count")
-            attacker_reward = sum(lane_waiting_vehicles.values()) - self.previous_metric_value
-            # self.previous_metric_value = sum(lane_waiting_vehicles.values())
-            obs = [agent.get_ob() for agent in self.agents]
-            rewards = [attacker_reward]
+            # Get proper per-intersection victim rewards (needed so each attacker gets its own signal)
+            if not len(self.agents) == 1:
+                obs = [agent.get_ob() for agent in self.agents]
+                rewards = [agent.get_reward() for agent in self.agents]
+            else:
+                obs = [self.agents[0].get_ob()]
+                rewards = [self.agents[0].get_reward()]  # shape (16,) inside rewards[0]
         else:
             if not len(self.agents) == 1:
                 obs = [agent.get_ob() for agent in self.agents]

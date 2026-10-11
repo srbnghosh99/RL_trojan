@@ -1,0 +1,6 @@
+Reward function,Controller,Attacker,Test,Travel Time with Attack,Travel Time NO Attack,Travel Time Increase (%),Throughput with Attack,Throughput with NO Attack,Throughput Change (%),Queue length with Attack,Queue length  with NO Attack
+Delta deltay,Cityflow1x1,Cityflow1x1,Cityflow1x1,563.39,137.34,310,695,2004,-65.3,81.5944,44.9444
+Delta queue,Cityflow1x1,Cityflow1x1,Cityflow1x1,230.4381,,,1009,,,82.5000,44.9444
+-Delta throughput,Cityflow1x1,Cityflow1x1,Cityflow1x1,321.7765,,,895,,,102.3528,
+All together,Cityflow1x1,Cityflow1x1,Cityflow1x1,,,,,,,,
+,Cityflow1x1,Cityflow1x1,Cityflow1x1,,,,,,,,

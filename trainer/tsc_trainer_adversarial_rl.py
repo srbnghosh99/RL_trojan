@@ -389,8 +389,19 @@ class TSCTrainerRLAdversarial(BaseTrainer):
                         att = self.attacker_agents[idx]
                         approach_act = att.current_action[0] if hasattr(att, 'current_action') and att.current_action else 0
                         scale_act = att.current_action[1] if hasattr(att, 'current_action') and att.current_action else []
+                        # assert self.attacker_agents[idx].intersection_id == self.world.intersection_ids[idx], \
+                        #     f"Mismatch at idx={idx}: attacker targets {self.attacker_agents[idx].intersection_id}, " \
+                        #     f"but reward index {idx} corresponds to {self.world.intersection_ids[idx]}"
                         #attacker_reward = float(rewards[0][idx]) - self.penalty_lambda * vehicles_injected_list[idx]  # Example reward: negative of victim's reward minus penalty for number of vehicles injected
-                        attacker_reward = float(rewards[0][0]) - self.penalty_lambda * vehicles_injected_list[idx]
+                        # attacker_reward = float(rewards[0][0]) - self.penalty_lambda * vehicles_injected_list[idx]
+                        attacker_reward = float(rewards[0][idx]) - self.penalty_lambda * vehicles_injected_list[idx]
+                        # print(f"[DEBUG] n_agents={len(self.agents)}, n_attacker_agents={len(self.attacker_agents)}")
+                        # print(f"[DEBUG] rewards shape={np.array(rewards).shape}, rewards={rewards}")
+                        #
+                        # print(f"[DEBUG] raw env.step rewards: {rewards}, type={type(rewards)}")
+                        # raw = self.agents[0].get_reward()
+                        # print(f"[DEBUG] agents[0].get_reward() directly: shape={np.array(raw).shape}, value={raw}")
+                        # print(f"[DEBUG] len(agents[0].reward_generator) = {len(self.agents[0].reward_generator)}")
                         att.observe(previous_attacker_state[idx], (approach_act, scale_act), (actions_prob[idx], values[idx]), attacker_reward, self.attacker_agents[idx].get_state(), dones_list[idx])
 
 
