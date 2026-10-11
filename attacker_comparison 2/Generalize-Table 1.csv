@@ -1,0 +1,7 @@
+Controller,Attacker,Test,Travel Time with Attack,Travel Time NO Attack,Travel Time Increase (%),Throughput with Attack,Throughput with NO Attack,Throughput decrease (%),Queue length with Attack,Queue length  with NO Attack, Queue length  increase (%)
+Zero shot,,,,,,,,,,,
+Cityflow1x1,Cityflow4x4,Cityflow1x1,156.3459,137.34,13.8385757972914,665,2004,66.8163672654691,78.3797,44.9444,74.3925828356814
+Cityflow1x1_sb_sx,Cityflow4x4,Cityflow1x1_sb_sx,110.6424,86.67,27.6593977154725,1608,1616,0.495049504950495,22.5806,11.0028,105.225942487367
+Cityflow4x4_5734,Cityflow4x4,Cityflow4x4_5734,899.97,365.45,146.26,1065,5649,81.1471056824217,36.7653,4.9986,635.511943344136
+Cityflow4x4_5816,Cityflow4x4,Cityflow4x4_5816,740.5922,345.3802,114.428099815797,2288,4161,45.013217976448,30.0469,3.6868,714.985895627645
+Jinan,Cityflow4x4,Jinan,,310.2795,,,5743,,,8.3789,
